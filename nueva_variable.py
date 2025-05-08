@@ -1,35 +1,42 @@
 import pandas as pd
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
 
 # Cargar datos
 matrimonios_df = pd.read_csv("matrimonios_limpio.csv")
 divorcios_df = pd.read_csv("divorcios_limpio.csv")
 
-# Seleccion de variables relevantes (según el análisis realizado)
-variables_clave = ["edad_promedio", "años_matrimonio", "num_hijos", "nivel_educativo"]  
-
-# Paso 1: selecciona las variables que quieres usar como base para calcular la probabilidad
-caracteristicas_clave = ['edad_esposo', 'edad_esposa', 'educacion_esposo', 'educacion_esposa']
-
-# Paso 2: agrupa el dataset de divorcios por esas variables y cuenta ocurrencias
-patrones_divorcio = divorcios_df.groupby(caracteristicas_clave).size().reset_index(name='frecuencia_divorcio')
-
-# Paso 3: normaliza la frecuencia para obtener una probabilidad relativa
-total_divorcios = patrones_divorcio['frecuencia_divorcio'].sum()
-patrones_divorcio['probabilidad_divorcio'] = patrones_divorcio['frecuencia_divorcio'] / total_divorcios
-
-# Paso 4: unir esa info al dataset de matrimonios
-matrimonios_df = matrimonios_df.merge(
-    patrones_divorcio[caracteristicas_clave + ['probabilidad_divorcio']],
-    on=caracteristicas_clave,
-    how='left'
+# Crear una firma con variables comunes
+matrimonios_df['firma'] = (
+    matrimonios_df['Ano Ocurrencia'].astype(str) + '_' +
+    matrimonios_df['Departamento de Ocurrencia'].astype(str) + '_' +
+    matrimonios_df['Edad del Hombre'].astype(str) + '_' +
+    matrimonios_df['Edad de la Mujer'].astype(str) + '_' +
+    matrimonios_df['Escolaridad del Hombre'].astype(str) + '_' +
+    matrimonios_df['Escolaridad de la Mujer'].astype(str)
 )
 
-# Paso 5: si alguna combinación no apareció en divorcios, asumimos baja probabilidad (o cero)
-matrimonios_df['probabilidad_divorcio'] = matrimonios_df['probabilidad_divorcio'].fillna(0)
+divorcios_df['firma'] = (
+    divorcios_df['Ano Ocurrencia'].astype(str) + '_' +
+    divorcios_df['Departamento de Ocurrencia'].astype(str) + '_' +
+    divorcios_df['Edad del Hombre'].astype(str) + '_' +
+    divorcios_df['Edad de la Mujer'].astype(str) + '_' +
+    divorcios_df['Escolaridad del Hombre'].astype(str) + '_' +
+    divorcios_df['Escolaridad de la Mujer'].astype(str)
+)
 
-# Guardar nuevo dataset con la variable calculada
-divorcios_df.to_csv("datos_con_probabilidad_divorcio.csv", index=False)
+# Extraer firmas únicas de divorcios
+firmas_divorcio = set(divorcios_df['firma'].unique())
 
-print("Variable 'probabilidad_divorcio' creada y guardada en 'datos_con_probabilidad_divorcio.csv'")
+# Crear la variable objetivo
+matrimonios_df['divorcio'] = matrimonios_df['firma'].apply(lambda x: 1 if x in firmas_divorcio else 0)
+
+# Eliminar columna 'firma'
+matrimonios_df = matrimonios_df.drop(columns=['firma'])
+
+# Guardar
+matrimonios_df.to_csv("dataset_modelo.csv", index=False)
+
+# Total de registros
+print("Total:", len(matrimonios_df))
+
+# Conteo de divorcios == 0 y == 1
+print(matrimonios_df['divorcio'].value_counts())
