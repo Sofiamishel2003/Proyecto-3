@@ -54,10 +54,33 @@ df_balanceado = pd.concat([divorciados, no_divorciados_sample])
 df_balanceado = df_balanceado.sample(frac=1, random_state=42).reset_index(drop=True)
 
 # Guardar
-df_balanceado.to_csv("Datos\dataset_muestra.csv", index=False)
+df_balanceado.to_csv("Datos\dataset_muestra50.csv", index=False)
 
 # Total de registros
 print("Total:", len(matrimonios_df))
+
+# Verificar distribución
+print(df_balanceado['divorcio'].value_counts())
+
+# MUESTRA CON MÁS CASOS DE DIVORCIOS
+proporcion_divorciados = 0.6
+num_divorciados = len(divorciados)
+num_no_divorciados = int(num_divorciados * (1 - proporcion_divorciados) / proporcion_divorciados)
+
+# Muestrear los no divorciados
+no_divorciados_sample = no_divorciados.sample(n=num_no_divorciados, random_state=42)
+
+# Combinar
+df_balanceado = pd.concat([divorciados, no_divorciados_sample])
+
+# Mezclar las filas
+df_balanceado = df_balanceado.sample(frac=1, random_state=42).reset_index(drop=True)
+
+# Guardar
+df_balanceado.to_csv("Datos/dataset_muestra60.csv", index=False)
+
+# Total de registros
+print("Total muestra 60/40:", len(df_balanceado))
 
 # Verificar distribución
 print(df_balanceado['divorcio'].value_counts())
